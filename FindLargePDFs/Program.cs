@@ -43,22 +43,40 @@ namespace FindLargePDFs
             Console.WriteLine($"Searching {path} for PDF files greater than {Utils.BytesToString(fileSize)}...\n");
             DirSeach(path);
 
+            ParallelOptions parallelOptions = new ParallelOptions
+            {
+                CancellationToken = cancelToken.Token,
+                MaxDegreeOfParallelism = Environment.ProcessorCount
+            };
+
             if (files.Count() > 0)
             {
-                foreach (var file in files)
+                var start = DateTime.Now;
+                Parallel.ForEach(files, file =>
                 {
-                    //var t = new Thread(() => CompressPDF(file));
-                    //t.Start();
-                    //ThreadPool.QueueUserWorkItem(new WaitCallback(CompressPDF), file);
-
+                    parallelOptions.CancellationToken.ThrowIfCancellationRequested();
                     CompressPDF(file);
-                    //Console.WriteLine("Continue?");
-                    //var keyPress = Console.ReadKey(true);
-                    //if (keyPress.Key == ConsoleKey.N)
-                    //{
-                    //    return;
-                    //}
-                }
+                });
+
+                var stop = DateTime.Now;
+                TimeSpan ts = stop.Subtract(start);
+                Console.WriteLine($"Total Time elapsed: {ts.Hours:D2} Hour(s), {ts.Minutes:D2} Minute(s), {ts.Seconds:D2} Second(s)");
+
+
+                //foreach (var file in files)
+                //{
+                //    //var t = new Thread(() => CompressPDF(file));
+                //    //t.Start();
+                //    //ThreadPool.QueueUserWorkItem(new WaitCallback(CompressPDF), file);
+
+                //    CompressPDF(file);
+                //    //Console.WriteLine("Continue?");
+                //    //var keyPress = Console.ReadKey(true);
+                //    //if (keyPress.Key == ConsoleKey.N)
+                //    //{
+                //    //    return;
+                //    //}
+                //}
 
                 Console.WriteLine($"Found {fileFoundCount} files with total of {Utils.BytesToString(totalFileSize)} in {fileTotalCount} files");
             }
@@ -175,9 +193,8 @@ namespace FindLargePDFs
             {
                 Console.WriteLine(x.Message);
             }
-
         }
-
+        private static CancellationTokenSource cancelToken = new CancellationTokenSource();
     }
 }
 
