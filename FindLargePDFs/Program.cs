@@ -54,6 +54,7 @@ namespace FindLargePDFs
                 var start = DateTime.Now;
                 Parallel.ForEach(files, file =>
                 {
+                    new ParallelOptions { MaxDegreeOfParallelism = 2, CancellationToken = cancelToken.Token };
                     parallelOptions.CancellationToken.ThrowIfCancellationRequested();
                     CompressPDF(file);
                 });
