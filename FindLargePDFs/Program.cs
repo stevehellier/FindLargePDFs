@@ -11,7 +11,7 @@ namespace FindLargePDFs
 {
     class Program
     {
-        static readonly int fileSize = (1024 * 1024) * 10; // 10 MB
+        static readonly long MaxFileSize = (1024 * 1024) * 10; // 10 MB
         static int fileFoundCount = 0;
         static int fileTotalCount = 0;
         static long totalFileSize = 0;
@@ -45,7 +45,7 @@ namespace FindLargePDFs
             logger.AddLogger(Loggers.Logtypes.Console);
             logger.AddLogger(Loggers.Logtypes.File);
 
-            logger.WriteMessage($"Searching {path} for PDF files greater than {Utils.BytesToString(fileSize)}...");
+            logger.WriteMessage($"Searching {path} for PDF files greater than {Utils.BytesToString(MaxFileSize)}...");
 
             DirSeach(path);
 
@@ -110,7 +110,7 @@ namespace FindLargePDFs
                 var oldSize = Utils.GetFileSize(inFile);
 
                 process.Start();
-                logger.WriteMessage($"Compressing {inFile} ({Utils.BytesToString(oldSize)}) to {outFile}");
+                logger.WriteMessage($"Compressing {inFile} to {outFile}");
                 process.WaitForExit();
                 while (!process.HasExited)
                 {
@@ -162,14 +162,15 @@ namespace FindLargePDFs
             {
                 foreach (var f in Directory.EnumerateFiles(directory, "*.pdf", SearchOption.AllDirectories))
                 {
-
-                    FileInfo fi = new FileInfo(f);
-                    if (fi.Length > fileSize)
+                    var filesize = Utils.GetFileSize(f);
+                    if (filesize > MaxFileSize)
+                    //FileInfo fi = new FileInfo(f);
+                    //if (fi.Length > fileSize)
                     {
                         fileFoundCount++;
                         logger.WriteMessage($"Found {f}");
                         files.Add(f);
-                        totalFileSize += fi.Length;
+                        totalFileSize += filesize;
                     }
                     fileTotalCount++;
                     spiner.Turn();
