@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace FindLargePDFs
 {
@@ -13,6 +14,27 @@ namespace FindLargePDFs
             int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
             double num = Math.Round(bytes / Math.Pow(1024, place), 1);
             return (Math.Sign(byteCount) * num).ToString() + suf[place];
+        }
+
+        public static long GetFileSize(string file)
+        {
+            FileInfo fi = new FileInfo(file);
+
+            return fi.Length;
+        }
+
+        public static float CalculatePercentageDifference(long a, long b)
+        {
+            float DiffPercent = 0;
+            float number = Math.Abs(a - b);
+            float avg = ((a + b) / 2);
+
+            float final = (number / avg);
+
+            DiffPercent = final * 100;
+
+            return DiffPercent;
+
         }
     }
 }

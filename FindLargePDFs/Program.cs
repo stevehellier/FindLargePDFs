@@ -17,6 +17,7 @@ namespace FindLargePDFs
         static long totalFileSize = 0;
         static string path = "";
         static IList<string> files = new List<string>();
+        static ILogger logger;
 
         static void Main(string[] args)
         {
@@ -39,8 +40,13 @@ namespace FindLargePDFs
             //Console.WriteLine($"Large PDF searcher\tVersion: 0.1\tcopyright (c) 2019 Steve Hellier\n");
 
             //ThreadPool.SetMaxThreads(2, 0);
+            logger = new Logger("test.log");
 
-            Console.WriteLine($"Searching {path} for PDF files greater than {Utils.BytesToString(fileSize)}...\n");
+            logger.AddLogger(Loggers.Logtypes.Console);
+            logger.AddLogger(Loggers.Logtypes.File);
+
+            logger.WriteMessage($"Searching {path} for PDF files greater than {Utils.BytesToString(fileSize)}...");
+
             DirSeach(path);
 
             ParallelOptions parallelOptions = new ParallelOptions
@@ -61,29 +67,13 @@ namespace FindLargePDFs
 
                 var stop = DateTime.Now;
                 TimeSpan ts = stop.Subtract(start);
-                Console.WriteLine($"Total Time elapsed: {ts.Hours:D2} Hour(s), {ts.Minutes:D2} Minute(s), {ts.Seconds:D2} Second(s)");
+                logger.WriteMessage($"Total Time elapsed: {ts.Hours:D2} Hour(s), {ts.Minutes:D2} Minute(s), {ts.Seconds:D2} Second(s)");
 
-
-                //foreach (var file in files)
-                //{
-                //    //var t = new Thread(() => CompressPDF(file));
-                //    //t.Start();
-                //    //ThreadPool.QueueUserWorkItem(new WaitCallback(CompressPDF), file);
-
-                //    CompressPDF(file);
-                //    //Console.WriteLine("Continue?");
-                //    //var keyPress = Console.ReadKey(true);
-                //    //if (keyPress.Key == ConsoleKey.N)
-                //    //{
-                //    //    return;
-                //    //}
-                //}
-
-                Console.WriteLine($"Found {fileFoundCount} files with total of {Utils.BytesToString(totalFileSize)} in {fileTotalCount} files");
+                logger.WriteMessage($"Found {fileFoundCount} files with total of {Utils.BytesToString(totalFileSize)} in {fileTotalCount} files");
             }
             else
             {
-                Console.WriteLine("No files found!");
+                logger.WriteMessage("No files found!");
             }
         }
 
@@ -113,38 +103,53 @@ namespace FindLargePDFs
             {
                 StartInfo = info
             };
-
+            process.OutputDataReceived += Process_OutputDataReceived;
+            process.ErrorDataReceived += Process_ErrorDataReceived;
             try
             {
+                var oldSize = Utils.GetFileSize(inFile);
+
                 process.Start();
-                Console.WriteLine($"Compressing {inFile} to {outFile}");
+                logger.WriteMessage($"Compressing {inFile} ({Utils.BytesToString(oldSize)}) to {outFile}");
                 process.WaitForExit();
                 while (!process.HasExited)
                 {
                     spiner.Turn();
                 }
-                Console.WriteLine($"Compressed {inFile}");
+                var newSize = Utils.GetFileSize(outFile);
+                float diff = Utils.CalculatePercentageDifference(oldSize, newSize);
+                logger.WriteMessage($"Compressed {inFile} (was: {Utils.BytesToString(oldSize)}) (now: {Utils.BytesToString(newSize)}) (diff: {diff:n2}%)");
 
-                ReplaceOldFile(fullTempPath, inFile);
+
+                //ReplaceOldFile(fullTempPath, inFile);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                logger.WriteMessage(ex.Message);
             }
         }
 
+        private static void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            logger.WriteMessage(e.Data);
+        }
+
+        private static void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            logger.WriteMessage(e.Data);
+        }
+
+
         static void ReplaceOldFile(string newFile, string oldFile)
         {
-            Console.WriteLine($"Moving {newFile} to {oldFile}");
+            logger.WriteMessage($"Moving {newFile} to {oldFile}");
             if (File.Exists(oldFile))
             {
-                //var owner = File.GetAccessControl(oldFile).GetOwner(typeof(System.Security.Principal.NTAccount));
                 var lastWriteTime = new FileInfo(oldFile).LastWriteTime;
                 var creationTime = new FileInfo(oldFile).CreationTime;
                 File.Move(oldFile, oldFile + ".old");
                 File.SetCreationTime(newFile, creationTime);
                 File.SetLastWriteTime(newFile, lastWriteTime);
-                //File.GetAccessControl(newFile).SetOwner(owner);
             }
 
             File.Move(newFile, oldFile);
@@ -161,34 +166,14 @@ namespace FindLargePDFs
                     FileInfo fi = new FileInfo(f);
                     if (fi.Length > fileSize)
                     {
-                        Console.WriteLine($"Found {f}");
+                        fileFoundCount++;
+                        logger.WriteMessage($"Found {f}");
                         files.Add(f);
                         totalFileSize += fi.Length;
-                        fileFoundCount++;
                     }
                     fileTotalCount++;
                     spiner.Turn();
                 }
-
-                //foreach (var d in Directory.GetDirectories(directory))
-                //{
-                //    foreach (var f in Directory.GetFiles(d, "*.pdf"))
-                //    {
-                //        FileInfo fi = new FileInfo(f);
-                //        if (fi.Length > fileSize)
-                //        {
-                //            Console.WriteLine($"Adding {f}");
-                //            files.Add(f);
-                //            totalFileSize += fi.Length;
-                //            fileFoundCount++;
-                //        }
-                //        fileTotalCount++;
-
-                //    }
-                //    directoryCount++;
-                //    spiner.Turn();
-                //    DirSeach(d);
-                //}
             }
             catch (Exception x)
             {
