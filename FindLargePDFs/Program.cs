@@ -40,7 +40,7 @@ namespace FindLargePDFs
             //Console.WriteLine($"Large PDF searcher\tVersion: 0.1\tcopyright (c) 2019 Steve Hellier\n");
 
             //ThreadPool.SetMaxThreads(2, 0);
-            logger = new Logger("test.log");
+            logger = new Logger("log.txt");
 
             logger.AddLogger(Loggers.Logtypes.Console);
             logger.AddLogger(Loggers.Logtypes.File);
@@ -121,7 +121,7 @@ namespace FindLargePDFs
                 logger.WriteMessage($"Compressed {inFile} (was: {Utils.BytesToString(oldSize)}) (now: {Utils.BytesToString(newSize)}) (diff: {diff:n2}%)");
 
 
-                //ReplaceOldFile(fullTempPath, inFile);
+                ReplaceOldFile(fullTempPath, inFile);
             }
             catch (Exception ex)
             {
@@ -147,12 +147,29 @@ namespace FindLargePDFs
             {
                 var lastWriteTime = new FileInfo(oldFile).LastWriteTime;
                 var creationTime = new FileInfo(oldFile).CreationTime;
-                File.Move(oldFile, oldFile + ".old");
-                File.SetCreationTime(newFile, creationTime);
-                File.SetLastWriteTime(newFile, lastWriteTime);
-            }
+                try
+                {
+                    File.Move(oldFile, oldFile + ".old");
+                    File.SetCreationTime(newFile, creationTime);
+                    File.SetLastWriteTime(newFile, lastWriteTime);
+                }
+                catch (Exception ex)
+                {
+                    logger.WriteMessage(ex.Message);
+                }
 
-            File.Move(newFile, oldFile);
+            }
+            else
+            {
+                try
+                {
+                    File.Move(newFile, oldFile);
+                }
+                catch (Exception ex)
+                {
+                    logger.WriteMessage(ex.Message);
+                }
+            }
         }
 
         static void DirSeach(string directory)
