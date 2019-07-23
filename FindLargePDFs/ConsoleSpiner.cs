@@ -4,11 +4,13 @@ namespace FindLargePDFs
 {
     public class ConsoleSpiner
     {
-        int counter;
+        private int counter;
+
         public ConsoleSpiner()
         {
             counter = 0;
         }
+
         public void Turn()
         {
             counter++;

@@ -9,17 +9,20 @@ using System.Threading.Tasks;
 
 namespace FindLargePDFs
 {
-    class Program
+    partial class Program
     {
-        static readonly long MaxFileSize = (1024 * 1024) * 10; // 10 MB
-        static int fileFoundCount = 0;
-        static int fileTotalCount = 0;
-        static long totalFileSize = 0;
-        static string path = "";
-        static IList<string> files = new List<string>();
-        static ILogger logger;
+        private static readonly long MaxFileSize = (1024 * 1024) * 10; // 10 MB
+        private static readonly string logfileName = "log.txt";
 
-        static void Main(string[] args)
+        private static int fileFoundCount = 0;
+        private static int fileTotalCount = 0;
+        private static long totalFileSize = 0;
+        private static string path = "";
+
+        private static IList<string> files = new List<string>();
+        private static ILogger logger;
+
+        private static void Main(string[] args)
         {
             if (args.Count() == 0)
             {
@@ -39,8 +42,7 @@ namespace FindLargePDFs
 
             //Console.WriteLine($"Large PDF searcher\tVersion: 0.1\tcopyright (c) 2019 Steve Hellier\n");
 
-            //ThreadPool.SetMaxThreads(2, 0);
-            logger = new Logger("log.txt");
+            logger = new Logger(logfileName);
 
             logger.AddLogger(Loggers.Logtypes.Console);
             logger.AddLogger(Loggers.Logtypes.File);
@@ -77,58 +79,6 @@ namespace FindLargePDFs
             }
         }
 
-        static void CompressPDF(object a)
-        {
-            string inFile = a as string;
-            ConsoleSpiner spiner = new ConsoleSpiner();
-            var fileName = Path.GetFileName(inFile);
-            var pathName = Path.GetDirectoryName(inFile);
-
-            var tempFolder = Path.GetTempPath();
-            var outFile = Path.GetTempFileName();
-            var fullTempPath = Path.Combine(tempFolder, outFile);
-
-            ProcessStartInfo info = new ProcessStartInfo
-            {
-                FileName = @"c:\program files\gs\gs9.27\bin\gswin64c.exe",
-                UseShellExecute = false,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                WindowStyle = ProcessWindowStyle.Normal,
-                CreateNoWindow = true,
-                Arguments = $"-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile=\"{fullTempPath}\" \"{inFile}\""
-            };
-
-            Process process = new Process
-            {
-                StartInfo = info
-            };
-            process.OutputDataReceived += Process_OutputDataReceived;
-            process.ErrorDataReceived += Process_ErrorDataReceived;
-            try
-            {
-                var oldSize = Utils.GetFileSize(inFile);
-
-                process.Start();
-                logger.WriteMessage($"Compressing {inFile} to {outFile}");
-                process.WaitForExit();
-                while (!process.HasExited)
-                {
-                    spiner.Turn();
-                }
-                var newSize = Utils.GetFileSize(outFile);
-                float diff = Utils.CalculatePercentageDifference(oldSize, newSize);
-                logger.WriteMessage($"Compressed {inFile} (was: {Utils.BytesToString(oldSize)}) (now: {Utils.BytesToString(newSize)}) (diff: {diff:n2}%)");
-
-
-                ReplaceOldFile(fullTempPath, inFile);
-            }
-            catch (Exception ex)
-            {
-                logger.WriteMessage(ex.Message);
-            }
-        }
-
         private static void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             logger.WriteMessage(e.Data);
@@ -139,65 +89,6 @@ namespace FindLargePDFs
             logger.WriteMessage(e.Data);
         }
 
-
-        static void ReplaceOldFile(string newFile, string oldFile)
-        {
-            logger.WriteMessage($"Moving {newFile} to {oldFile}");
-            if (File.Exists(oldFile))
-            {
-                var lastWriteTime = new FileInfo(oldFile).LastWriteTime;
-                var creationTime = new FileInfo(oldFile).CreationTime;
-                try
-                {
-                    File.Move(oldFile, oldFile + ".old");
-                    File.SetCreationTime(newFile, creationTime);
-                    File.SetLastWriteTime(newFile, lastWriteTime);
-                }
-                catch (Exception ex)
-                {
-                    logger.WriteMessage(ex.Message);
-                }
-
-            }
-            else
-            {
-                try
-                {
-                    File.Move(newFile, oldFile);
-                }
-                catch (Exception ex)
-                {
-                    logger.WriteMessage(ex.Message);
-                }
-            }
-        }
-
-        static void DirSeach(string directory)
-        {
-            ConsoleSpiner spiner = new ConsoleSpiner();
-            try
-            {
-                foreach (var f in Directory.EnumerateFiles(directory, "*.pdf", SearchOption.AllDirectories))
-                {
-                    var filesize = Utils.GetFileSize(f);
-                    if (filesize > MaxFileSize)
-                    //FileInfo fi = new FileInfo(f);
-                    //if (fi.Length > fileSize)
-                    {
-                        fileFoundCount++;
-                        logger.WriteMessage($"Found {f}");
-                        files.Add(f);
-                        totalFileSize += filesize;
-                    }
-                    fileTotalCount++;
-                    spiner.Turn();
-                }
-            }
-            catch (Exception x)
-            {
-                Console.WriteLine(x.Message);
-            }
-        }
         private static CancellationTokenSource cancelToken = new CancellationTokenSource();
     }
 }
