@@ -10,7 +10,7 @@ namespace FindLargePDFs
 {
     partial class Program
     {
-        private static void CompressPDF(object a)
+        private static void DoCompressPDF(object a)
         {
             string inFile = a as string;
             ConsoleSpiner spiner = new ConsoleSpiner();
@@ -54,7 +54,7 @@ namespace FindLargePDFs
                 logger.WriteMessage($"Compressed {inFile} (was: {Utils.BytesToString(oldSize)}) (now: {Utils.BytesToString(newSize)}) (diff: {diff:n2}%)");
 
 
-                ReplaceOldFile(fullTempPath, inFile);
+                DoReplaceOldFile(fullTempPath, inFile);
             }
             catch (Exception ex)
             {

@@ -9,7 +9,7 @@ namespace FindLargePDFs
 {
     partial class Program
     {
-        private static void ReplaceOldFile(string newFile, string oldFile)
+        private static void DoReplaceOldFile(string newFile, string oldFile)
         {
             logger.WriteMessage($"Moving {newFile} to {oldFile}");
             if (File.Exists(oldFile))

@@ -49,7 +49,7 @@ namespace FindLargePDFs
 
             logger.WriteMessage($"Searching {path} for PDF files greater than {Utils.BytesToString(MaxFileSize)}...");
 
-            DirSeach(path);
+            DoDirecrtorySearch(path);
 
             ParallelOptions parallelOptions = new ParallelOptions
             {
@@ -64,7 +64,7 @@ namespace FindLargePDFs
                 {
                     new ParallelOptions { MaxDegreeOfParallelism = 2, CancellationToken = cancelToken.Token };
                     parallelOptions.CancellationToken.ThrowIfCancellationRequested();
-                    CompressPDF(file);
+                    DoCompressPDF(file);
                 });
 
                 var stop = DateTime.Now;

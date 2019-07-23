@@ -9,7 +9,7 @@ namespace FindLargePDFs
 {
     partial class Program
     {
-        private static void DirSeach(string directory)
+        private static void DoDirecrtorySearch(string directory)
         {
             ConsoleSpiner spiner = new ConsoleSpiner();
             try
