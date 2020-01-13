@@ -6,13 +6,31 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CommandLine;
 
 namespace FindLargePDFs
 {
     partial class Program
     {
-        private static readonly long MaxFileSize = (1024 * 1024) * 30; // 10 MB
+        public class Options
+        {
+            [Option('v', Required = false, HelpText = "Set output to verbose messages.")]
+            public bool Verbose { get; set; }
+
+            [Option('p', Required = true, HelpText = "Path to search")]
+            public string Path { get; set; }
+
+            [Option("min", Required = false, HelpText = "Minimum file size")]
+            public long Min { get; set; }
+            [Option("max", Required = false, HelpText = "Maximum file size")]
+            public long Max { get; set; }
+        }
+
+        //private static long MaxFileSize = (1024 * 1024) * 30; // 10 MB
+        private static long MaxFileSize = long.MaxValue;
+        private static long MinFileSize = 0;
         private static readonly string logfileName = "log.txt";
+
 
         private static int fileFoundCount = 0;
         private static int fileTotalCount = 0;
@@ -25,26 +43,54 @@ namespace FindLargePDFs
 
         private static void Main(string[] args)
         {
+            Parser.Default.ParseArguments<Options>(args)
+                .WithParsed<Options>(o =>
+                {
+                    if (o.Verbose)
+                    {
+                        Console.WriteLine($"Verbose mode!!");
+                    }
+                    if (!string.IsNullOrEmpty(o.Path))
+                    {
+                        path = o.Path;
+                    }
+                    else
+                    {
+                        Console.WriteLine(o.ToString());
+                    }
+
+                    if (o.Min > 0)
+                    {
+                        MinFileSize = o.Min;
+                    }
+                    if (o.Max > 0)
+                    {
+                        MaxFileSize = o.Max;
+                    }
+
+                });
+            //Console.WriteLine($"Min file is {MinFileSize.ToFileSize()}");
+            //var MaxFileSizeDisplayName = MaxFileSize.ToFileSize();
+            //Console.WriteLine($"Max file is {MaxFileSizeDisplayName}");
+
+
+            //return;
+
             if (args.Count() == 0)
             {
                 Console.WriteLine($"Please specify a path to search");
                 return;
             }
 
-            if (args.Count() > 0)
-            {
-                path = args[0].ToString();
-                if (!Directory.Exists(path))
-                {
-                    Console.WriteLine($"{path} is not a valid path!");
-                    return;
-                }
-            }
-
-            if (args.Contains("/fs"))
-            {
-
-            }
+            //if (args.Count() > 0)
+            //{
+            //    path = args[0].ToString();
+            //    if (!Directory.Exists(path))
+            //    {
+            //        Console.WriteLine($"{path} is not a valid path!");
+            //        return;
+            //    }
+            //}
 
             //Console.WriteLine($"Large PDF searcher\tVersion: 0.1\tcopyright (c) 2019 Steve Hellier\n");
 
@@ -53,7 +99,7 @@ namespace FindLargePDFs
             logger.AddLogger(Loggers.Logtypes.Console);
             logger.AddLogger(Loggers.Logtypes.File);
 
-            DoDirecrtorySearchForPDFs(path);
+            DoDirecrtorySearchForPDFs(path, MinFileSize, MaxFileSize);
 
             //DoDirecrtorySearchByDate(path, searchDate);
 

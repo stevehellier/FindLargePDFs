@@ -9,21 +9,27 @@ namespace FindLargePDFs
 {
     partial class Program
     {
-        private static void DoDirecrtorySearchForPDFs(string directory)
+        private static void DoDirecrtorySearchForPDFs(string directory, long MinFileSize, long MaxFileSize)
         {
             ConsoleSpiner spiner = new ConsoleSpiner();
             try
             {
-                logger.WriteMessage($"Searching {path} for PDF files greater than {Utils.BytesToString(MaxFileSize)}...");
+                if (MinFileSize > 0)
+                {
+                    logger.WriteMessage($"Searching {path} for PDF files between {MinFileSize.ToFileSize()} and {MaxFileSize.ToFileSize()}...");
+                }
+                else
+                {
+                    logger.WriteMessage($"Searching {path} for PDF files up to {MaxFileSize.ToFileSize()}...");
+                }
+
                 foreach (var f in Directory.EnumerateFiles(directory, "*.pdf", SearchOption.AllDirectories))
                 {
                     var filesize = Utils.GetFileSize(f);
-                    if (filesize >= MaxFileSize)
-                    //FileInfo fi = new FileInfo(f);
-                    //if (fi.Length > fileSize)
+                    if (filesize >= MinFileSize && filesize <= MaxFileSize)
                     {
                         fileFoundCount++;
-                        logger.WriteMessage($"Found {f} ({filesize / (1024 * 1024)} MB)");
+                        logger.WriteMessage($"Found {f} ({filesize.ToFileSize()})");
                         files.Add(f);
                         totalFileSize += filesize;
                     }
