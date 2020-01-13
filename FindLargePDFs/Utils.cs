@@ -19,8 +19,21 @@ namespace FindLargePDFs
         public static long GetFileSize(string file)
         {
             FileInfo fi = new FileInfo(file);
-
             return fi.Length;
+        }
+
+        public static DateTime GetFileCreatedDate(string file)
+        {
+            FileInfo fi = new FileInfo(file);
+            return fi.CreationTime;
+
+        }
+
+        public static DateTime GetFileModifiedDate(string file)
+        {
+            FileInfo fi = new FileInfo(file);
+            return fi.LastWriteTime;
+
         }
 
         public static float CalculatePercentageDifference(long a, long b)

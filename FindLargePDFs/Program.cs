@@ -11,7 +11,7 @@ namespace FindLargePDFs
 {
     partial class Program
     {
-        private static readonly long MaxFileSize = (1024 * 1024) * 10; // 10 MB
+        private static readonly long MaxFileSize = (1024 * 1024) * 30; // 10 MB
         private static readonly string logfileName = "log.txt";
 
         private static int fileFoundCount = 0;
@@ -21,6 +21,7 @@ namespace FindLargePDFs
 
         private static IList<string> files = new List<string>();
         private static ILogger logger;
+        private static DateTime searchDate = DateTime.Now.AddYears(-5);
 
         private static void Main(string[] args)
         {
@@ -40,6 +41,11 @@ namespace FindLargePDFs
                 }
             }
 
+            if (args.Contains("/fs"))
+            {
+
+            }
+
             //Console.WriteLine($"Large PDF searcher\tVersion: 0.1\tcopyright (c) 2019 Steve Hellier\n");
 
             logger = new Logger(logfileName);
@@ -47,9 +53,9 @@ namespace FindLargePDFs
             logger.AddLogger(Loggers.Logtypes.Console);
             logger.AddLogger(Loggers.Logtypes.File);
 
-            logger.WriteMessage($"Searching {path} for PDF files greater than {Utils.BytesToString(MaxFileSize)}...");
+            DoDirecrtorySearchForPDFs(path);
 
-            DoDirecrtorySearch(path);
+            //DoDirecrtorySearchByDate(path, searchDate);
 
             ParallelOptions parallelOptions = new ParallelOptions
             {
@@ -64,7 +70,7 @@ namespace FindLargePDFs
                 {
                     new ParallelOptions { MaxDegreeOfParallelism = 2, CancellationToken = cancelToken.Token };
                     parallelOptions.CancellationToken.ThrowIfCancellationRequested();
-                    DoCompressPDF(file);
+                    //DoCompressPDF(file);
                 });
 
                 var stop = DateTime.Now;
